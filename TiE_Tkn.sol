@@ -1,6 +1,8 @@
 //known errors: / emit log for burn and mint 
 // SPDX-License-Identifier: MIT
 
+// File: @openzeppelin/contracts/math/SafeMath.sol
+
 pragma solidity ^0.8.13;
 
 
@@ -106,21 +108,22 @@ contract Tie20 is ERC20 {
     event Burn(address indexed burner, uint256 value);
     event Mint(address indexed minter, uint256 value);*/
 
-    string constant private _name = "TieToken 21";
-    string constant private _symbol = "TIE21";
+    string constant private _name = "TieToken 22";
+    string constant private _symbol = "TIE22";
     uint256 private  _supply = 50000 * (10 ** 6);
     uint8 constant private _decimals = 6;
     address private _owner;
     bool private _reentrant = false;
     
     constructor() {
-        _owner = 0x1468f1eF50507f53e7791f97A4442E11DfB51396;
+        _owner = 0x196B124DB02d9879BC05371Bd094b84e6d426151;
         /*_name = "TieToken 21";
         _symbol = "TIE21";
         _decimals = 6;        
         _supply = 50000 * (10 ** _decimals);
         _balances[_owner] = _supply;
         _reentrant = false;*/
+        _balances[_owner] = _supply;
         emit Transfer(address(this), _owner, _supply);
     }
 
