@@ -1,8 +1,6 @@
 //known errors: / emit log for burn and mint 
 // SPDX-License-Identifier: MIT
 
-// File: @openzeppelin/contracts/math/SafeMath.sol
-
 pragma solidity ^0.8.13;
 
 
@@ -108,24 +106,33 @@ contract Tie20 is ERC20 {
     event Burn(address indexed burner, uint256 value);
     event Mint(address indexed minter, uint256 value);*/
 
-    string private _name;
-    string private _symbol;
-    uint private  _supply;
-    uint8 private _decimals;
+    string constant private _name = "TieToken 21";
+    string constant private _symbol = "TIE21";
+    uint256 private  _supply = 50000 * (10 ** 6);
+    uint8 constant private _decimals = 6;
     address private _owner;
+    bool private _reentrant = false;
     
     constructor() {
-        _owner = msg.sender;
-        _name = "TieToken 21";
+        _owner = 0x1468f1eF50507f53e7791f97A4442E11DfB51396;
+        /*_name = "TieToken 21";
         _symbol = "TIE21";
         _decimals = 6;        
         _supply = 50000 * (10 ** _decimals);
         _balances[_owner] = _supply;
+        _reentrant = false;*/
         emit Transfer(address(this), _owner, _supply);
     }
 
     modifier owner {
         require(msg.sender == _owner); _;
+    }
+
+    modifier noreentrancy {
+        require(!_reentrant, "Reentrancy hijack detected");
+        _reentrant = true;
+        _;
+        _reentrant = false;
     }
     
     function name() external view returns(string memory) {
@@ -171,7 +178,7 @@ contract Tie20 is ERC20 {
     function afterTokenTransfer(address to, uint256 amount) internal virtual { 
     } 
 
-    function transfer(address to, uint256 amount) external override returns(bool) {
+    function transfer(address to, uint256 amount) external override noreentrancy returns(bool) {
        beforeTokenTransfer(to, amount);
        require(balanceOf(msg.sender) >= amount, "Insufficient funds."); //require this as a safety prevention for anyone to send tokens
 
@@ -182,7 +189,7 @@ contract Tie20 is ERC20 {
        return true;
     }
 
-    function transferFrom(address from, address to, uint256 amount) external override owner returns(bool) {
+    function transferFrom(address from, address to, uint256 amount) external override owner noreentrancy returns(bool) {
         beforeTokenTransfer(to, amount);
         require(balanceOf(from) >= amount, "Insufficient funds.");
 
