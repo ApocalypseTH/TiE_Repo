@@ -1,5 +1,6 @@
 //known errors: / emit log for burn and mint 
 // SPDX-License-Identifier: MIT
+//made with love by InvaderTeam <3 :V:
 pragma solidity ^0.8.13;
 
 interface ERC20 {
@@ -16,8 +17,6 @@ interface ERC20 {
     event OwnershipRelocated(address indexed previousOwner, address indexed newOwner);
 
 }
-// File: @openzeppelin/contracts/math/SafeMath.sol
-pragma solidity ^0.8.13;
 
 library SafeMath {
     function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) { uint256 c = a + b; if (c < a) return (false, 0); return (true, c); }
@@ -32,8 +31,6 @@ library SafeMath {
     function mod(uint256 a, uint256 b) internal pure returns (uint256) { require(b > 0, "SafeMath: modulo by zero"); return a % b; }
 }
 
-pragma solidity ^0.8.13;
-//made with love by InvaderTeam 
 contract Tie32 is ERC20 {
     using SafeMath for uint256;    
     mapping(address => uint) private _balances;
