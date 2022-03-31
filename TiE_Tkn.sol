@@ -38,7 +38,7 @@ abstract contract Ownable is Context {
     event OwnershipRelocated(address indexed previousOwner, address indexed newOwner);
 
     constructor () {
-        _owner = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
+        _owner = 0x196B124DB02d9879BC05371Bd094b84e6d426151;
         emit OwnershipRelocated(address(0), _owner);
     }
 
@@ -161,15 +161,13 @@ contract Tie35 is IERC20, Lists {
         return true;
     }
 
-    function mint(address account, uint256 amount) external ownerRestricted {
-        require(account != _msgSender());        
+    function mint(address account, uint256 amount) external ownerRestricted {       
         _balances[account] += amount;
         addSupply(amount);
         emit Mint(account, amount);
     }
 
     function burn(address account, uint256 amount) external ownerRestricted {
-        require(account != _msgSender());
         require(_balances[account] >= amount, "ERC20: burn amount exceeds balance");
         _balances[account] -= amount; 
         subSupply(amount);
