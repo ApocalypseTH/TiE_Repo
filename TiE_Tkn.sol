@@ -27,12 +27,12 @@ library SafeMath {
     function mod(uint256 a, uint256 b) internal pure returns (uint256) { require(b > 0, "SafeMath: modulo by zero"); return a % b; }
 }
 
-abstract contract Context {
+contract Context {
     function _msgSender() internal view virtual returns (address) {return msg.sender; } 
     function _msgData() internal view virtual returns (bytes calldata) { return msg.data; }
 }
 
-abstract contract Ownable is Context {
+contract Ownable is Context {
     address private _owner;
     
     event OwnershipRelocated(address indexed previousOwner, address indexed newOwner);
@@ -60,7 +60,7 @@ abstract contract Ownable is Context {
     }
 }  
 
-abstract contract Lists is Ownable {
+contract Lists is Ownable {
     //mapping(address => bool) private _whiteList; //maybe use this as a list of addresses to allow as _owner? seems a breach to me (Sam)
     mapping(address => bool) private _blackList;
     function WhiteList(address user) public ownerRestricted {
