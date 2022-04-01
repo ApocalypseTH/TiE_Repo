@@ -62,17 +62,17 @@ contract Ownable is Context {
 }  
 
 contract Lists is Ownable {
-    mapping(address => bool) private _blackList;
-    function WhiteList(address user) public ownerRestricted {
-        require(_blackList[user], "user not blacklisted");
-        _blackList[user] = false;
+    mapping(address => bool) private _freezer;
+    function Unfreeze(address user) public ownerRestricted {
+        require(_freezer[user], "user not blacklisted");
+        _freezer[user] = false;
     }
-    function BlackList(address user) public ownerRestricted {
-        require(!_blackList[user], "user already blacklisted");
-        _blackList[user] = true;
+    function Freeze(address user) public ownerRestricted {
+        require(!_freezer[user], "user already blacklisted");
+        _freezer[user] = true;
     }
-    function BlackListed(address user) internal view returns (bool) {
-        return _blackList[user];
+    function Freezed(address user) internal view returns (bool) {
+        return _freezer[user];
     }
 }
 
@@ -105,7 +105,7 @@ contract Tie35 is IERC20, Lists {
     function beforeTokenTransfer(address from, address to, uint256 amount) internal virtual {
         require(_balances[from] >= amount, "Insufficient funds.");
         require(from != address(0), "ERC20: approve from the zero address");
-        require(!BlackListed(to), "Recipient is blacklisted");
+        require(!Freezed(to), "Recipient is blacklisted");
         require(to != address(0), "ERC20: burn from the zero address");
         require(amount > 0, "Empty transactions consume gas as well you moron");
     }
