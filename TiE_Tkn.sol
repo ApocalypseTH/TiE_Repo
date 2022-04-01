@@ -98,8 +98,7 @@ contract Tie35 is IERC20, Lists {
     function symbol() external pure returns(string memory) { return _symbol; }
     function decimals() external pure returns(uint8) { return _decimals; }
     function totalSupply() external view override returns(uint256) { return _supply.div(10 ** _decimals); }       
-    function balanceOf(address wallet) external view override returns(uint256) { return _balances[wallet]; } 
-//need to check if blacklisted, then return backup balance since the original is redistributed imo dunno damn this shit hard af xd
+    function balanceOf(address wallet) external view override returns(uint256) { return _balances[wallet]; }
     function subSupply(uint256 amount) private { _supply = _supply.sub(amount); }
     function addSupply(uint256 amount) private { _supply = _supply.add(amount); }
 
@@ -114,9 +113,6 @@ contract Tie35 is IERC20, Lists {
     }
 
     function _approve(address owner, address spender, uint256 amount) private {
-        require(owner != address(0), "ERC20: approve from the zero address");
-        require(spender != address(0), "ERC20: approve to the zero address");
-        //require(!_blackList[owner], "Recipient is backlisted");
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
@@ -142,6 +138,7 @@ contract Tie35 is IERC20, Lists {
     }
     
     function approve(address spender, uint256 amount) external override returns (bool) {
+        beforeTokenTransfer(_msgSender(), spender, amount);
         _approve(_msgSender(), spender, amount);
         return true;
     }
