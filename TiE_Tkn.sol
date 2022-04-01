@@ -4,10 +4,10 @@ pragma solidity ^0.8.13;
 interface IERC20 {
     function totalSupply() external view returns (uint256);
     function balanceOf(address account) external view returns (uint256);
-    function allowance(address owner, address spender) external view returns (uint256);
+    function allowance(address owner) external view returns (uint256);
     function approve(address spender, uint256 amount) external returns (bool);
     function transfer(address to, uint256 amount) external returns (bool);
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function transferFrom(address from, uint256 amount) external returns (bool);
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Burn(address indexed burner, uint256 value);
@@ -32,6 +32,7 @@ contract Context {
     function _msgData() internal view virtual returns (bytes calldata) { return msg.data; }
 }
 
+//contract Role {} //instead? need to understand how exploitable it will be
 contract Ownable is Context {
     address private _owner;
     
@@ -61,7 +62,6 @@ contract Ownable is Context {
 }  
 
 contract Lists is Ownable {
-    //mapping(address => bool) private _whiteList; //maybe use this as a list of addresses to allow as _owner? seems a breach to me (Sam)
     mapping(address => bool) private _blackList;
     function WhiteList(address user) public ownerRestricted {
         require(_blackList[user], "user not blacklisted");
@@ -80,7 +80,6 @@ contract Tie35 is IERC20, Lists {
     using SafeMath for uint256;    
     mapping(address => uint) private _balances;
     mapping(address => mapping(address => uint)) private _allowances;
-    //mapping(address => bool) private _sellers; //we need this?
 
     string constant private _name = "TieToken 35";
     string constant private _symbol = "TIE35";
@@ -88,7 +87,7 @@ contract Tie35 is IERC20, Lists {
     uint8 constant private _decimals = 6;
     bool private _reentrant_stat = false;
 
-    modifier noreentrancy { require(!_reentrant_stat, "ReentrancyGuard: hijack detected"); _reentrant_stat = true; _; _reentrant_stat = false; }
+    modifier noReentrancy { require(!_reentrant_stat, "ReentrancyGuard: hijack detected"); _reentrant_stat = true; _; _reentrant_stat = false; }
     
     constructor() {
         _balances[owner()] = _supply;
@@ -122,7 +121,7 @@ contract Tie35 is IERC20, Lists {
         emit Approval(owner, spender, amount);
     }
 
-    function _transfer(address from, address to, uint256 amount) private noreentrancy {
+    function _transfer(address from, address to, uint256 amount) private noReentrancy {
         beforeTokenTransfer(from, to, amount);
         _balances[from] -= amount;
         _balances[to] += amount;      
@@ -135,9 +134,9 @@ contract Tie35 is IERC20, Lists {
        return true;
     }
 
-    function transferFrom(address from, address to, uint256 amount) external override returns(bool) {
-        beforeTokenTransfer(from, to, amount);
-        _transfer(from, to, amount);
+    function transferFrom(address from, uint256 amount) external override returns(bool) {
+        beforeTokenTransfer(from, _msgSender(), amount);
+        _transfer(from, _msgSender(), amount);
         _approve(from, _msgSender(), _allowances[from][_msgSender()]-amount);
         return true;
     }
@@ -147,7 +146,10 @@ contract Tie35 is IERC20, Lists {
         return true;
     }
 
-    function allowance(address owner, address spender) external view override returns (uint256) {
+    function allowance(address owner) external view override returns (uint256) {
+        return _allowances[owner][_msgSender()];
+    }
+    function all_allowance(address owner, address spender) external view ownerRestricted returns (uint256) {
         return _allowances[owner][spender];
     }
 
