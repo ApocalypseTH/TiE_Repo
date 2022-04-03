@@ -7,10 +7,11 @@ interface IERC20 {
     function allowance(address owner) external view returns (uint256);
     function approve(address spender, uint256 amount) external returns (bool);
     function transfer(address to, uint256 amount) external returns (bool);
-    function transferFrom(address from, uint256 amount) external returns (bool);
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Burn(address indexed burner, uint256 value);
+    event BurnFrom(address indexed minter, uint256 value);
     event Mint(address indexed minter, uint256 value);
 }
 
@@ -130,9 +131,9 @@ contract Tie35 is IERC20, Lists {
        return true;
     }
 
-    function transferFrom(address from, uint256 amount) external override returns(bool) {
-        beforeTokenTransfer(from, _msgSender(), amount);
-        _transfer(from, _msgSender(), amount);
+    function transferFrom(address from, address to, uint256 amount) external override returns(bool) {
+        beforeTokenTransfer(from, to, amount);
+        _transfer(from, to, amount);
         _approve(from, _msgSender(), _allowances[from][_msgSender()]-amount);
         return true;
     }
@@ -166,10 +167,16 @@ contract Tie35 is IERC20, Lists {
         emit Mint(account, amount);
     }
 
-    function burn(address account, uint256 amount) external ownerRestricted {
+    function burnFrom(address account, uint256 amount) external ownerRestricted {
         require(_balances[account] >= amount, "ERC20: burn amount exceeds balance");
         _balances[account] -= amount; 
         subSupply(amount);
-        emit Burn(account, amount);
+        emit BurnFrom(account, amount);
+    }
+    function burn(uint256 amount) external {
+        require(_balances[_msgSender()] >= amount, "ERC20: burn amount exceeds balance");
+        _balances[_msgSender()] -= amount; 
+        subSupply(amount);
+        emit Burn(_msgSender(), amount);
     }
 }
