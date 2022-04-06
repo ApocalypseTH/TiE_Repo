@@ -26,6 +26,7 @@ library SafeMath {
     function mul(uint256 a, uint256 b) internal pure returns (uint256) { if (a == 0) return 0; uint256 c = a * b; require(c / a == b, "SafeMath: multiplication overflow"); return c; }
     function div(uint256 a, uint256 b) internal pure returns (uint256) { require(b > 0, "SafeMath: division by zero"); return a / b; }
     function mod(uint256 a, uint256 b) internal pure returns (uint256) { require(b > 0, "SafeMath: modulo by zero"); return a % b; }
+    function ceil(uint256 a, uint256 m) internal pure returns (uint256) { uint256 c = add(a,m); uint256 d = sub(c,1); return mul(div(d,m),m); }
 }
 
 contract Context {
@@ -40,7 +41,7 @@ contract Ownable is Context {
     event OwnershipRelocated(address indexed previousOwner, address indexed newOwner);
 
     constructor () {
-        _owner = 0x196B124DB02d9879BC05371Bd094b84e6d426151;
+        _owner = 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4;
         emit OwnershipRelocated(address(0), _owner);
     }
 
@@ -77,7 +78,7 @@ contract Lists is Ownable {
     }
 }
 
-contract Tie35 is IERC20, Lists {
+contract Tie is IERC20, Lists {
     using SafeMath for uint256;    
     mapping(address => uint) private _balances;
     mapping(address => mapping(address => uint)) private _allowances;
@@ -126,12 +127,12 @@ contract Tie35 is IERC20, Lists {
         afterTokenTransfer(to, amount);
     }
 
-    function transfer(address to, uint256 amount) external override returns(bool) {
+    function transfer(address to, uint256 amount) public override returns(bool) {
        _transfer(_msgSender(), to, amount);
        return true;
     }
 
-    function transferFrom(address from, address to, uint256 amount) external override returns(bool) {
+    function transferFrom(address from, address to, uint256 amount) public override returns(bool) {
         beforeTokenTransfer(from, to, amount);
         _transfer(from, to, amount);
         _approve(from, _msgSender(), _allowances[from][_msgSender()]-amount);
@@ -179,4 +180,83 @@ contract Tie35 is IERC20, Lists {
         subSupply(amount);
         emit Burn(_msgSender(), amount);
     }
+}
+
+
+contract Stake is Tie {
+    using SafeMath for uint256;
+    uint256 public totalStakes = 0;
+    uint256 private stakingFee = 1;
+    uint256 private unstakingFee = 3;
+    uint256 private totalFeed = 0;
+    uint256 private stakingRewardRatio = 1; //0.1%/hour
+
+    struct USER{
+        uint256 stakedTokens;
+        uint256 creationTime;
+        uint256 lastClaim;
+        uint256 totalEarned;
+    }
+
+    mapping(address => USER) internal stakers;
+
+    event Staked(address staker, uint256 tokens, uint256 stakingFee);
+    event Unstaked(address staker, uint256 tokens, uint256 unstakingFee);
+
+    event ClaimedReward(address staker, uint256 reward);
+
+    /*constructor() { //pretty useless now, maybe will find a use later idk
+    }*/
+
+    function claimRewardStake(address user) external returns(uint256){
+    }
+
+    function currentRewardStake(address user) public view returns(uint256){
+        //gotta check and calc the time, maybe add a limiter to let people stake more than that
+        //than calc the percentage of tokens they have on the total tokens in the pool in totalStakes var
+        //so we can multiply that value for stakingRewardRatio, need to understand if set reward per hour or day
+        //when this will be done we will testing how it behaves, if good than adapt to claimRewardStake
+        if(stakers[user].stakedTokens > 0){
+            uint256 timeStaked = (block.timestamp - stakers[user].creationTime) / 3600;
+
+            uint256 StakedOnTotal = stakers[user].stakedTokens / totalStakes;
+
+            return ((timeStaked * StakedOnTotal) * stakingRewardRatio) / 10; //wtf am I doing .-.
+        }
+        else{
+            return 0;
+        }
+    }
+
+    function stake(uint256 tokens) external noReentrancy {
+        require(transferFrom(_msgSender(), address(this), tokens), "Tokens cannot be transfered from your account");
+        uint256 _stackingFee = onePercent(tokens) * stakingFee;
+        totalFeed += _stackingFee;
+        uint256 feeDeductedTokens = tokens - _stackingFee;
+        stakers[_msgSender()].totalEarned += currentRewardStake(_msgSender()); //this will be needed to add the tokens made with the staked tokens so far
+        stakers[_msgSender()].stakedTokens += feeDeductedTokens;
+        stakers[_msgSender()].creationTime = block.timestamp;
+        totalStakes += feeDeductedTokens;
+        emit Staked(_msgSender(), feeDeductedTokens, _stackingFee);
+    }
+    
+    function withdrawStake(uint256 tokens) external noReentrancy {
+        require(stakers[_msgSender()].stakedTokens >= tokens && tokens > 0, "Invalid token amount to withdraw");
+        uint256 _unstakingFee = onePercent(tokens) * unstakingFee;
+        totalFeed += _unstakingFee;
+        uint256 feeDeductedTokens = tokens - _unstakingFee;
+        require(transfer(_msgSender(), feeDeductedTokens), "Error in the un-stacking process, tokens not transferred");
+        totalStakes -= feeDeductedTokens;
+        emit Unstaked(_msgSender(), feeDeductedTokens, _unstakingFee);
+    }
+
+    function onePercent(uint tokens) private pure returns (uint256){
+        uint256 rounded = tokens.ceil(100);  //from 0.7- need to try without and see if it works
+        return rounded.div(100);
+    }
+    
+    function stakeOf(address staker) external view returns (uint256){
+        return stakers[staker].stakedTokens;
+    }
+
 }
