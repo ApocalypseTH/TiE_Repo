@@ -190,6 +190,9 @@ contract Stake is Tie {
     uint256 private unstakingFee = 3;
     uint256 private totalFeed = 0;
     uint256 private stakingRewardRatio = 1; //0.1%/hour
+    bool private _reentrant_stak = false;
+
+    modifier noReentrancyStak { require(!_reentrant_stak, "ReentrancyGuard: hijack detected"); _reentrant_stak = true; _; _reentrant_stak = false; }
 
     struct USER{
         uint256 stakedTokens;
@@ -228,7 +231,7 @@ contract Stake is Tie {
         }
     }
 
-    function stake(uint256 tokens) external noReentrancy {
+    function stake(uint256 tokens) external noReentrancyStak {
         require(transferFrom(_msgSender(), address(this), tokens), "Tokens cannot be transfered from your account");
         uint256 _stackingFee = onePercent(tokens) * stakingFee;
         totalFeed += _stackingFee;
@@ -240,7 +243,7 @@ contract Stake is Tie {
         emit Staked(_msgSender(), feeDeductedTokens, _stackingFee);
     }
     
-    function withdrawStake(uint256 tokens) external noReentrancy {
+    function withdrawStake(uint256 tokens) external noReentrancyStak {
         require(stakers[_msgSender()].stakedTokens >= tokens && tokens > 0, "Invalid token amount to withdraw");
         uint256 _unstakingFee = onePercent(tokens) * unstakingFee;
         totalFeed += _unstakingFee;
