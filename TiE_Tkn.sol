@@ -183,11 +183,12 @@ contract Tie is IERC20, Lists {
 }
 
 
-contract Stake is Tie {
+contract Stake is Ownable {
     using SafeMath for uint256;
     uint256 public totalStakes = 0;
-    uint256 private stakingFee = 1;
-    uint256 private unstakingFee = 3;
+    //uint256 private stakingFee = 1;
+    //uint256 private unstakingFee = 3;
+    address private TieActual = 0xaE036c65C649172b43ef7156b009c6221B596B8b;
     uint256 private totalFeed = 0;
     uint256 private stakingRewardRatio = 1; //0.1%/hour
     bool private _reentrant_stak = false;
@@ -203,8 +204,8 @@ contract Stake is Tie {
 
     mapping(address => USER) internal stakers;
 
-    event Staked(address staker, uint256 tokens, uint256 stakingFee);
-    event Unstaked(address staker, uint256 tokens, uint256 unstakingFee);
+    event Staked(address staker, uint256 tokens);
+    event Unstaked(address staker, uint256 tokens);
 
     event ClaimedReward(address staker, uint256 reward);
 
@@ -232,25 +233,26 @@ contract Stake is Tie {
     }
 
     function stake(uint256 tokens) external noReentrancyStak {
-        require(transferFrom(_msgSender(), address(this), tokens), "Tokens cannot be transfered from your account");
-        uint256 _stackingFee = onePercent(tokens) * stakingFee;
-        totalFeed += _stackingFee;
-        uint256 feeDeductedTokens = tokens - _stackingFee;
+        require(IERC20(TieActual).transferFrom(_msgSender(), address(this), tokens), "Tokens cannot be transfered from your account");
+        //uint256 _stackingFee = onePercent(tokens) * stakingFee;
+        //totalFeed += _stackingFee;
+        //uint256 feeDeductedTokens = tokens - _stackingFee;
         stakers[_msgSender()].totalEarned += currentRewardStake(_msgSender()); //this will be needed to add the tokens made with the staked tokens so far
-        stakers[_msgSender()].stakedTokens += feeDeductedTokens;
+        stakers[_msgSender()].stakedTokens += tokens;
         stakers[_msgSender()].creationTime = block.timestamp;
-        totalStakes += feeDeductedTokens;
-        emit Staked(_msgSender(), feeDeductedTokens, _stackingFee);
+        totalStakes += tokens;
+        emit Staked(_msgSender(), tokens);
     }
     
-    function withdrawStake(uint256 tokens) external noReentrancyStak {
+    function withdrawStake(uint256 tokens) external payable noReentrancyStak {
         require(stakers[_msgSender()].stakedTokens >= tokens && tokens > 0, "Invalid token amount to withdraw");
-        uint256 _unstakingFee = onePercent(tokens) * unstakingFee;
-        totalFeed += _unstakingFee;
-        uint256 feeDeductedTokens = tokens - _unstakingFee;
-        require(transfer(_msgSender(), feeDeductedTokens), "Error in the un-stacking process, tokens not transferred");
-        totalStakes -= feeDeductedTokens;
-        emit Unstaked(_msgSender(), feeDeductedTokens, _unstakingFee);
+        //uint256 _unstakingFee = onePercent(tokens) * unstakingFee;
+        //totalFeed += _unstakingFee;
+        //uint256 feeDeductedTokens = tokens - _unstakingFee;
+        require(IERC20(TieActual).transfer(_msgSender(), tokens), "Error in the un-stacking process, tokens not transferred");
+        stakers[_msgSender()].stakedTokens -= tokens;
+        totalStakes -= tokens;
+        emit Unstaked(_msgSender(), tokens);
     }
 
     function onePercent(uint tokens) private pure returns (uint256){
@@ -261,5 +263,4 @@ contract Stake is Tie {
     function stakeOf(address staker) external view returns (uint256){
         return stakers[staker].stakedTokens;
     }
-
 }
