@@ -29,6 +29,12 @@ library SafeMath {
     function ceil(uint256 a, uint256 m) internal pure returns (uint256) { uint256 c = add(a,m); uint256 d = sub(c,1); return mul(div(d,m),m); }
 }
 
+contract ReentrancyGuard {
+    bool private _reentrant_stat = false;
+
+    modifier noReentrancy { require(!_reentrant_stat, "ReentrancyGuard: hijack detected"); _reentrant_stat = true; _; _reentrant_stat = false; }
+}
+
 contract Context {
     function _msgSender() internal view virtual returns (address) {return msg.sender; } 
     function _msgData() internal view virtual returns (bytes calldata) { return msg.data; }
@@ -63,7 +69,7 @@ contract Ownable is Context {
     }
 }  
 
-contract Lists is Ownable {
+contract Lists is Ownable, ReentrancyGuard {
     mapping(address => bool) private _freezer;
     function Unfreeze(address user) public ownerRestricted {
         require(_freezer[user], "user not blacklisted");
@@ -87,9 +93,6 @@ contract Tie is IERC20, Lists {
     string constant private _symbol = "TIE35";
     uint256 private  _supply = 50000 * (10 ** 6);
     uint8 constant private _decimals = 6;
-    bool private _reentrant_stat = false;
-
-    modifier noReentrancy { require(!_reentrant_stat, "ReentrancyGuard: hijack detected"); _reentrant_stat = true; _; _reentrant_stat = false; }
     
     constructor() {
         _balances[owner()] = _supply;
@@ -183,25 +186,21 @@ contract Tie is IERC20, Lists {
 }
 
 
-contract Stake is Ownable {
+contract Stake is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     uint256 public totalStakes = 0;
     //uint256 private stakingFee = 1;
     //uint256 private unstakingFee = 3;
-    address private TieActual = 0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47;
+    address private TieActual = 0xd9145CCE52D386f254917e481eB44e9943F39138;
     // uint256 private totalFeed = 0;
 
     uint private rewardRatioTier1 = 1; //0.1%/hour more min for now, test purpose
     uint private rewardRatioTier2 = 3;
     uint private rewardRatioTier3 = 7;
 
-    uint private timeLimitTier1 = 1;
+    uint private timeLimitTier1 = 1; // 1, 2, 3 mins
     uint private timeLimitTier2 = 2;
     uint private timeLimitTier3 = 3;
-
-    bool private _reentrant_stak = false;
-
-    modifier noReentrancyStak { require(!_reentrant_stak, "ReentrancyGuard: hijack detected"); _reentrant_stak = true; _; _reentrant_stak = false; }
 
     struct USER{
         uint256 stakedTokens;
@@ -232,17 +231,21 @@ contract Stake is Ownable {
         if(stakers[user].stakedTokens > 0){
             uint256 timeStaked = (block.timestamp - stakers[user].lastClaim) / 60;
 
-            uint256 timer = stakers[_msgSender()].lockedTime;
+            uint256 reward = onePercent(stakers[user].stakedTokens);
 
-            if(timer <= 1 minute){
-
+            if(stakers[_msgSender()].lockedTime <= timeLimitTier1){
+                reward = (reward * (rewardRatioTier1 * timeStaked)) / 10;
             }
-            else if(timer <= 2 minute){
-
+            else if(stakers[_msgSender()].lockedTime <= timeLimitTier2){
+                reward = (reward * (rewardRatioTier2 * timeStaked)) / 10;
             }
-            else if(timer <= 3 minute){
-
+            else if(stakers[_msgSender()].lockedTime <= timeLimitTier3 && stakers[_msgSender()].lockedTime > timeLimitTier3){
+                reward = (reward * (rewardRatioTier3 * timeStaked)) / 10;
             }
+
+            reward += stakers[_msgSender()].totalEarned;
+            
+            return reward;
 
             // uint256 StakedOnTotal = (totalStakes / stakers[user].stakedTokens) * 10000;
 
@@ -254,7 +257,7 @@ contract Stake is Ownable {
         }
     }
 
-    function stake(uint256 tokens, uint256 lockTime) external noReentrancyStak {
+    function stake(uint256 tokens, uint256 lockTime) external noReentrancy { //lockTime is native in minute for this version, no need for conversions
         require(IERC20(TieActual).transferFrom(_msgSender(), address(this), tokens), "Tokens cannot be transfered from your account");
         //uint256 _stackingFee = onePercent(tokens) * stakingFee;
         //totalFeed += _stackingFee;
@@ -277,12 +280,15 @@ contract Stake is Ownable {
         emit Staked(_msgSender(), tokens);
     }
     
-    function withdrawStake(uint256 tokens) external payable noReentrancyStak {
+    function withdrawStake(uint256 tokens) external payable noReentrancy {
         require(stakers[_msgSender()].stakedTokens >= tokens && tokens > 0, "Invalid token amount to withdraw");
+        require((block.timestamp - stakers[_msgSender()].creationTime) / 60 >= stakers[_msgSender()].lockedTime, "your tokens are still locked");  // /60 means minutes
         //uint256 _unstakingFee = onePercent(tokens) * unstakingFee;
         //totalFeed += _unstakingFee;
         //uint256 feeDeductedTokens = tokens - _unstakingFee;
         require(IERC20(TieActual).transfer(_msgSender(), tokens), "Error in the un-stacking process, tokens not transferred");
+        stakers[_msgSender()].totalEarned += currentRewardStake(_msgSender());
+        stakers[_msgSender()].lastClaim = block.timestamp;
         stakers[_msgSender()].stakedTokens -= tokens;
         totalStakes -= tokens;
         emit Unstaked(_msgSender(), tokens);
