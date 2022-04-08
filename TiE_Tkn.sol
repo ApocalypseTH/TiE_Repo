@@ -188,9 +188,17 @@ contract Stake is Ownable {
     uint256 public totalStakes = 0;
     //uint256 private stakingFee = 1;
     //uint256 private unstakingFee = 3;
-    address private TieActual = 0xaE036c65C649172b43ef7156b009c6221B596B8b;
-    uint256 private totalFeed = 0;
-    uint256 private stakingRewardRatio = 1; //0.1%/hour
+    address private TieActual = 0x7EF2e0048f5bAeDe046f6BF797943daF4ED8CB47;
+    // uint256 private totalFeed = 0;
+
+    uint private rewardRatioTier1 = 1; //0.1%/hour more min for now, test purpose
+    uint private rewardRatioTier2 = 3;
+    uint private rewardRatioTier3 = 7;
+
+    uint private timeLimitTier1 = 1;
+    uint private timeLimitTier2 = 2;
+    uint private timeLimitTier3 = 3;
+
     bool private _reentrant_stak = false;
 
     modifier noReentrancyStak { require(!_reentrant_stak, "ReentrancyGuard: hijack detected"); _reentrant_stak = true; _; _reentrant_stak = false; }
@@ -200,6 +208,7 @@ contract Stake is Ownable {
         uint256 creationTime;
         uint256 lastClaim;
         uint256 totalEarned;
+        uint256 lockedTime;
     }
 
     mapping(address => USER) internal stakers;
@@ -221,25 +230,49 @@ contract Stake is Ownable {
         //so we can multiply that value for stakingRewardRatio, need to understand if set reward per hour or day
         //when this will be done we will testing how it behaves, if good than adapt to claimRewardStake
         if(stakers[user].stakedTokens > 0){
-            uint256 timeStaked = (block.timestamp - stakers[user].creationTime) / 3600;
+            uint256 timeStaked = (block.timestamp - stakers[user].lastClaim) / 60;
 
-            uint256 StakedOnTotal = stakers[user].stakedTokens / totalStakes;
+            uint256 timer = stakers[_msgSender()].lockedTime;
 
-            return ((timeStaked * StakedOnTotal) * stakingRewardRatio) / 10; //wtf am I doing .-.
+            if(timer <= 1 minute){
+
+            }
+            else if(timer <= 2 minute){
+
+            }
+            else if(timer <= 3 minute){
+
+            }
+
+            // uint256 StakedOnTotal = (totalStakes / stakers[user].stakedTokens) * 10000;
+
+            // return ((timeStaked * StakedOnTotal) * stakingRewardRatio) / 10; //wtf am I doing .-.
+            // return (timeStaked * StakedOnTotal) / 10000;
         }
         else{
             return 0;
         }
     }
 
-    function stake(uint256 tokens) external noReentrancyStak {
+    function stake(uint256 tokens, uint256 lockTime) external noReentrancyStak {
         require(IERC20(TieActual).transferFrom(_msgSender(), address(this), tokens), "Tokens cannot be transfered from your account");
         //uint256 _stackingFee = onePercent(tokens) * stakingFee;
         //totalFeed += _stackingFee;
         //uint256 feeDeductedTokens = tokens - _stackingFee;
+        uint256 currStake = stakers[_msgSender()].stakedTokens;
+        
         stakers[_msgSender()].totalEarned += currentRewardStake(_msgSender()); //this will be needed to add the tokens made with the staked tokens so far
         stakers[_msgSender()].stakedTokens += tokens;
-        stakers[_msgSender()].creationTime = block.timestamp;
+
+        if(currStake == 0){
+            stakers[_msgSender()].creationTime = block.timestamp;
+            stakers[_msgSender()].lastClaim = block.timestamp;
+            stakers[_msgSender()].lockedTime = lockTime;
+        }
+        else{
+            stakers[_msgSender()].lastClaim = block.timestamp;  // like this is needed to withdraw all the tokens before lock up for another stack of time
+        }
+
         totalStakes += tokens;
         emit Staked(_msgSender(), tokens);
     }
@@ -262,5 +295,9 @@ contract Stake is Ownable {
     
     function stakeOf(address staker) external view returns (uint256){
         return stakers[staker].stakedTokens;
+    }
+
+    function WatchClaimTimeMins(address staker) external view returns (uint256){
+        return (block.timestamp - stakers[staker].creationTime) / 60;
     }
 }
