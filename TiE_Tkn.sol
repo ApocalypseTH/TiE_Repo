@@ -183,6 +183,9 @@ contract Tie is IERC20, Lists {
         subSupply(amount);
         emit Burn(_msgSender(), amount);
     }
+
+    fallback() external payable { revert();  } 
+    receive() external payable { revert(); }
 }
 
 
@@ -306,4 +309,7 @@ contract Stake is Ownable, ReentrancyGuard {
     function WatchClaimTimeMins(address staker) external view returns (uint256){
         return (block.timestamp - stakers[staker].creationTime) / 60;
     }
+    
+    fallback() external payable { revert();  } 
+    receive() external payable { revert(); }
 }
