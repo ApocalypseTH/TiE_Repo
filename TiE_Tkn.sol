@@ -256,7 +256,9 @@ contract Stake is Ownable, ReentrancyGuard {
             // return (timeStaked * StakedOnTotal) / 10000;
         }
         else{
-            return 0;
+            uint256 reward = 0;
+            reward += stakers[_msgSender()].totalEarned;
+            return reward;
         }
     }
 
@@ -284,7 +286,7 @@ contract Stake is Ownable, ReentrancyGuard {
     }
     
     function withdrawStake(uint256 tokens) external payable noReentrancy {
-        require(stakers[_msgSender()].stakedTokens >= tokens && tokens > 0, "Invalid token amount to withdraw");
+        require(stakers[_msgSender()].stakedTokens + stakers[_msgSender()].totalEarned >= tokens && tokens > 0, "Invalid token amount to withdraw");
         require((block.timestamp - stakers[_msgSender()].creationTime) / 60 >= stakers[_msgSender()].lockedTime, "your tokens are still locked");  // /60 means minutes
         //uint256 _unstakingFee = onePercent(tokens) * unstakingFee;
         //totalFeed += _unstakingFee;
@@ -310,6 +312,10 @@ contract Stake is Ownable, ReentrancyGuard {
         return (block.timestamp - stakers[staker].creationTime) / 60;
     }
     
+    function totalRew() external view returns(uint256){
+        return stakers[_msgSender()].totalEarned;
+    }
+
     fallback() external payable { revert();  } 
     receive() external payable { revert(); }
 }
