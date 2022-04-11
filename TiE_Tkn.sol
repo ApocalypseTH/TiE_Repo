@@ -225,6 +225,7 @@ contract Stake is Ownable, ReentrancyGuard {
 
     function claimRewardStake() external returns(uint256){
         emit ClaimedReward(_msgSender(), stakers[_msgSender()].totalEarned);
+        return stakers[_msgSender()].totalEarned;
     }
 
     function currentRewardStake(address user) public view returns(uint256){
@@ -243,7 +244,7 @@ contract Stake is Ownable, ReentrancyGuard {
             else if(stakers[_msgSender()].lockedTime <= timeLimitTier2){
                 reward = (reward * (rewardRatioTier2 * timeStaked)) / 10;
             }
-            else if(stakers[_msgSender()].lockedTime <= timeLimitTier3 && stakers[_msgSender()].lockedTime > timeLimitTier3){
+            else if(stakers[_msgSender()].lockedTime <= timeLimitTier3 || stakers[_msgSender()].lockedTime > timeLimitTier3){
                 reward = (reward * (rewardRatioTier3 * timeStaked)) / 10;
             }
 
