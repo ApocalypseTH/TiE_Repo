@@ -286,19 +286,25 @@ contract Stake is Ownable, ReentrancyGuard {
     }
     
     function withdrawStake(uint256 tokens) external payable noReentrancy {
-        require(stakers[_msgSender()].stakedTokens + stakers[_msgSender()].totalEarned >= tokens && tokens > 0, "Invalid token amount to withdraw");
+        require(stakers[_msgSender()].stakedTokens + currentRewardStake(_msgSender()) >= tokens && tokens > 0, "Invalid token amount to withdraw");
         require((block.timestamp - stakers[_msgSender()].creationTime) / 60 >= stakers[_msgSender()].lockedTime, "your tokens are still locked");  // /60 means minutes
         //uint256 _unstakingFee = onePercent(tokens) * unstakingFee;
         //totalFeed += _unstakingFee;
         //uint256 feeDeductedTokens = tokens - _unstakingFee;
         require(IERC20(TieActual).transfer(_msgSender(), tokens), "Error in the un-stacking process, tokens not transferred");
-        stakers[_msgSender()].totalEarned += currentRewardStake(_msgSender());
+        stakers[_msgSender()].totalEarned = currentRewardStake(_msgSender());
         stakers[_msgSender()].lastClaim = block.timestamp;
+
+        uint256 rewWihdrawed = 0;
+        if(tokens > stakers[_msgSender()].stakedTokens){
+            rewWihdrawed = tokens - stakers[_msgSender()].stakedTokens;
+            stakers[_msgSender()].totalEarned -= rewWihdrawed;
+            tokens -= rewWihdrawed;
+        }
         stakers[_msgSender()].stakedTokens -= tokens;
         totalStakes -= tokens;
-        emit Unstaked(_msgSender(), tokens);
+        emit Unstaked(_msgSender(), tokens + rewWihdrawed);
     }
-
     function onePercent(uint tokens) private pure returns (uint256){
         uint256 rounded = tokens.ceil(100);  //from 0.7- need to try without and see if it works
         return rounded.div(100);
