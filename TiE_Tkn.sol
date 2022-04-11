@@ -223,7 +223,8 @@ contract Stake is Ownable, ReentrancyGuard {
     /*constructor() { //pretty useless now, maybe will find a use later idk
     }*/
 
-    function claimRewardStake(address user) external returns(uint256){
+    function claimRewardStake() external returns(uint256){
+        emit ClaimedReward(_msgSender(), stakers[_msgSender()].totalEarned);
     }
 
     function currentRewardStake(address user) public view returns(uint256){
@@ -318,10 +319,6 @@ contract Stake is Ownable, ReentrancyGuard {
         return (block.timestamp - stakers[staker].creationTime) / 60;
     }
     
-    function totalRew() external view returns(uint256){
-        return stakers[_msgSender()].totalEarned;
-    }
-
     fallback() external payable { revert();  } 
     receive() external payable { revert(); }
 }
