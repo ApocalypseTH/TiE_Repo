@@ -297,15 +297,15 @@ contract Stake is Ownable, ReentrancyGuard {
         stakers[_msgSender()].totalEarned = currentRewardStake(_msgSender());
         stakers[_msgSender()].lastClaim = block.timestamp;
 
-        uint256 rewWihdrawed = 0;
+        uint256 rewWithdrawed = 0;
         if(tokens > stakers[_msgSender()].stakedTokens){
-            rewWihdrawed = tokens - stakers[_msgSender()].stakedTokens;
-            stakers[_msgSender()].totalEarned -= rewWihdrawed;
-            tokens -= rewWihdrawed;
+            rewWithdrawed = tokens - stakers[_msgSender()].stakedTokens;
+            stakers[_msgSender()].totalEarned -= rewWithdrawed;
+            tokens -= rewWithdrawed;
         }
         stakers[_msgSender()].stakedTokens -= tokens;
         totalStakes -= tokens;
-        emit Unstaked(_msgSender(), tokens + rewWihdrawed);
+        emit Unstaked(_msgSender(), tokens + rewWithdrawed);
     }
     function onePercent(uint tokens) private pure returns (uint256){
         uint256 rounded = tokens.ceil(100);  //from 0.7- need to try without and see if it works
