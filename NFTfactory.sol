@@ -157,11 +157,11 @@ contract ERC721 is Context, IERC721, IERC721Metadata {
         _symbol = symbol_;
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return
             interfaceId == type(IERC721).interfaceId ||
             interfaceId == type(IERC721Metadata).interfaceId ||
-            super.supportsInterface(interfaceId);
+            supportsInterface(interfaceId);
     }
 
     function balanceOf(address owner) public view virtual override returns (uint256) {
@@ -454,7 +454,7 @@ library Counters {
     }
 }
 
-contract FactoryNFT is ERC721 { 
+contract FactoryNFT is ERC721URIStorage { 
 
     using Counters for Counters.Counter; 
     Counters.Counter private _tokenIds;
