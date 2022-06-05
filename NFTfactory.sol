@@ -32,7 +32,11 @@ interface IERC721 {
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }
 
-import "@openzeppelin/contracts/utils/Address.sol"; //wtf is this
+library Address {
+    function isContract(address account) internal view returns (bool) {
+        return account.code.length > 0;
+    }    
+}
 
 interface IERC721Metadata is IERC721 {
 
@@ -79,44 +83,6 @@ library Strings {
             value /= 10;
         }
         return string(buffer);
-    }
-
-    /**
-     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation.
-     */
-    function toHexString(uint256 value) internal pure returns (string memory) {
-        if (value == 0) {
-            return "0x00";
-        }
-        uint256 temp = value;
-        uint256 length = 0;
-        while (temp != 0) {
-            length++;
-            temp >>= 8;
-        }
-        return toHexString(value, length);
-    }
-
-    /**
-     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
-     */
-    function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
-        bytes memory buffer = new bytes(2 * length + 2);
-        buffer[0] = "0";
-        buffer[1] = "x";
-        for (uint256 i = 2 * length + 1; i > 1; --i) {
-            buffer[i] = _HEX_SYMBOLS[value & 0xf];
-            value >>= 4;
-        }
-        require(value == 0, "Strings: hex length insufficient");
-        return string(buffer);
-    }
-
-    /**
-     * @dev Converts an `address` with fixed length of 20 bytes to its not checksummed ASCII `string` hexadecimal representation.
-     */
-    function toHexString(address addr) internal pure returns (string memory) {
-        return toHexString(uint256(uint160(addr)), _ADDRESS_LENGTH);
     }
 }
 
@@ -379,7 +345,10 @@ contract ERC721 is Context, IERC721, IERC721Metadata {
         address from,
         address to,
         uint256 tokenId
-    ) internal virtual {}
+    ) internal virtual {
+        // require(_balances[from] >= 1, "Insufficient funds.");
+        // require(from != to, "ERC721: can`t send NFT to yourself bruh");
+    }
 
     function _afterTokenTransfer(
         address from,
@@ -466,7 +435,7 @@ contract FactoryNFT is ERC721URIStorage {
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
 
-        _mint(msg.sender, newItemId);
+        _safeMint(msg.sender, newItemId);
         _setTokenURI(newItemId, tokenURI);
 
         return newItemId;
