@@ -161,7 +161,7 @@ contract ERC721 is Context, IERC721, IERC721Metadata {
     }
 
     function _baseURI() internal view virtual returns (string memory) {
-        return "";
+        return "https://gateway.pinata.cloud/ipfs/";
     }
 
     function approve(address to, uint256 tokenId) public virtual override {
@@ -390,7 +390,7 @@ abstract contract ERC721URIStorage is ERC721 {
 
     function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal virtual {
         require(_exists(tokenId), "ERC721URIStorage: URI set of nonexistent token");
-        _tokenURIs[tokenId] = concatenate(_baseURI(), _tokenURI); // HOTFIX CONCATENATE STRINGS
+        _tokenURIs[tokenId] = _tokenURI; // HOTFIX CONCATENATE STRINGS
     }
 
     function _burn(uint256 tokenId) internal virtual override {
@@ -399,10 +399,6 @@ abstract contract ERC721URIStorage is ERC721 {
         if (bytes(_tokenURIs[tokenId]).length != 0) {
             delete _tokenURIs[tokenId];
         }
-    }
-
-    function _baseURI() internal pure override returns (string memory) {
-        return "https://gateway.pinata.cloud/ipfs/";
     }
 }
 
