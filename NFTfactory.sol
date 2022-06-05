@@ -355,6 +355,9 @@ contract ERC721 is Context, IERC721, IERC721Metadata {
         address to,
         uint256 tokenId
     ) internal virtual {}
+
+    fallback() external payable { revert();  } 
+    receive() external payable { revert(); }
 }
 
 abstract contract ERC721URIStorage is ERC721 {
