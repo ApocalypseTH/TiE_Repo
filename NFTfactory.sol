@@ -84,6 +84,10 @@ library Strings {
         }
         return string(buffer);
     }
+
+    function concatenate(string memory a,string memory b) public pure returns (string memory){
+        return string(abi.encodePacked(a,' ',b));
+    }
 }
 
 abstract contract Context {
@@ -386,7 +390,7 @@ abstract contract ERC721URIStorage is ERC721 {
 
     function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal virtual {
         require(_exists(tokenId), "ERC721URIStorage: URI set of nonexistent token");
-        _tokenURIs[tokenId] = _tokenURI;
+        _tokenURIs[tokenId] = concatenate(_baseURI(), _tokenURI); // HOTFIX CONCATENATE STRINGS
     }
 
     function _burn(uint256 tokenId) internal virtual override {
@@ -395,6 +399,10 @@ abstract contract ERC721URIStorage is ERC721 {
         if (bytes(_tokenURIs[tokenId]).length != 0) {
             delete _tokenURIs[tokenId];
         }
+    }
+
+    function _baseURI() internal pure override returns (string memory) {
+        return "https://gateway.pinata.cloud/ipfs/";
     }
 }
 
